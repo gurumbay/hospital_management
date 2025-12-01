@@ -2,7 +2,7 @@
 Central import for all Pydantic schemas.
 """
 
-from app.schemas.base import BaseSchema, IDSchema, TimestampSchema
+from app.schemas.base import BaseSchema
 from app.schemas.auth import Token, TokenData, LoginRequest, RegisterRequest
 from app.schemas.user import UserBase, UserCreate, UserUpdate, UserResponse, UserInDB
 from app.schemas.diagnosis import DiagnosisBase, DiagnosisCreate, DiagnosisUpdate, DiagnosisResponse
@@ -12,8 +12,6 @@ from app.schemas.patient import PatientBase, PatientCreate, PatientUpdate, Patie
 __all__ = [
     # Base
     "BaseSchema",
-    "IDSchema",
-    "TimestampSchema",
     
     # Auth
     "Token",

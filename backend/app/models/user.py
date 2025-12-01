@@ -20,7 +20,7 @@ class User(Base):
     first_name: Mapped[str]
     last_name: Mapped[str]
     father_name: Mapped[Optional[str]] = mapped_column(nullable=True)
-    role: Mapped[UserRole] = mapped_column(default=UserRole.DOCTOR,  create_type=False)
+    role: Mapped[UserRole] = mapped_column(default=UserRole.DOCTOR)
     is_active: Mapped[bool] = mapped_column(default=True)
     
     def __repr__(self) -> str:
