@@ -1,4 +1,50 @@
-import type { AxiosError } from 'axios';
+export function extractErrorMessage(err: any): string {
+  if (!err) return 'Unknown error';
+
+  // Axios response errors
+  const resp = err.response?.data ?? err;
+
+  // If response has 'detail'
+  const detail = resp.detail ?? resp;
+
+  // If it's a string
+  if (typeof detail === 'string') return detail;
+
+  // If it's an array (pydantic validation errors)
+  if (Array.isArray(detail)) {
+    try {
+      return detail
+        .map((d: any) => {
+          if (typeof d === 'string') return d;
+          const loc = Array.isArray(d.loc) ? d.loc.join('.') : '';
+          const msg = d.msg || d.message || JSON.stringify(d);
+          return loc ? `${loc}: ${msg}` : msg;
+        })
+        .join(' ; ');
+    } catch (e) {
+      return JSON.stringify(detail);
+    }
+  }
+
+  // If it's an object with message or msg
+  if (typeof detail === 'object') {
+    if (detail.message) return String(detail.message);
+    if (detail.msg) return String(detail.msg);
+    // Fallback: try to stringify limited
+    try {
+      return JSON.stringify(detail);
+    } catch (e) {
+      return String(detail);
+    }
+  }
+
+  // Fallback to err.message
+  if (err.message) return String(err.message);
+
+  return 'Unknown error';
+}
+
+export default extractErrorMessage;import type { AxiosError } from 'axios';
 
 interface ValidationError {
   loc: (string | number)[];

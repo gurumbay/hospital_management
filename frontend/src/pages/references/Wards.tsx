@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
+import { extractErrorMessage } from '../../utils/errorHandling';
 import { distributionService } from '../../services/distributionService';
 import type { WardResponse, WardCreate, DiagnosisResponse } from '../../api/generated';
 
@@ -49,7 +50,7 @@ const WardsPage: React.FC = () => {
       setWards(response.data || []);
       setError('');
     } catch (err: any) {
-      setError('Failed to load wards');
+      setError(extractErrorMessage(err) || 'Failed to load wards');
       console.error(err);
     } finally {
       setLoading(false);
@@ -112,7 +113,7 @@ const WardsPage: React.FC = () => {
       fetchWards();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save ward');
+      setError(extractErrorMessage(err) || 'Failed to save ward');
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,7 @@ const WardsPage: React.FC = () => {
       fetchWards();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete ward');
+      setError(extractErrorMessage(err) || 'Failed to delete ward');
     } finally {
       setLoading(false);
     }

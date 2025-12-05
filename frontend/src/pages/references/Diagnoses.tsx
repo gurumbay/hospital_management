@@ -12,6 +12,8 @@ import {
 } from '@mui/material';
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
+import { extractErrorMessage } from '../../utils/errorHandling';
+import { useNotification } from '../../contexts/NotificationContext';
 import type { DiagnosisResponse, DiagnosisCreate } from '../../api/generated';
 
 type Column = {
@@ -28,6 +30,7 @@ const DiagnosesPage: React.FC = () => {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<DiagnosisResponse | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<DiagnosisCreate>({ name: '' });
+  const { notify } = useNotification();
 
   useEffect(() => {
     fetchDiagnoses();
@@ -81,7 +84,7 @@ const DiagnosesPage: React.FC = () => {
       fetchDiagnoses();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save diagnosis');
+      setError(extractErrorMessage(err) || 'Failed to save diagnosis');
     } finally {
       setLoading(false);
     }
@@ -92,11 +95,20 @@ const DiagnosesPage: React.FC = () => {
 
     setLoading(true);
     try {
+      // Check whether any patients reference this diagnosis
+      const resp = await getApi().getPatientsApiV1PatientsGet({ diagnosis_id: selectedDiagnosis.id, limit: 1 });
+      if (resp.data && resp.data.length > 0) {
+        // Notify user and do not attempt deletion
+        notify('Cannot delete diagnosis: it is assigned to one or more patients', 'error');
+        setLoading(false);
+        return;
+      }
+
       await getApi().deleteDiagnosisApiV1DiagnosesDiagnosisIdDelete(selectedDiagnosis.id);
       fetchDiagnoses();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete diagnosis');
+      setError(extractErrorMessage(err) || 'Failed to delete diagnosis');
     } finally {
       setLoading(false);
     }

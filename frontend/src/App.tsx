@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import MainLayout from './components/layout/MainLayout';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -25,7 +26,8 @@ const App: React.FC = () => {
       <Router>
         <AuthProvider>
           <NotificationProvider>
-            <Routes>
+            <ErrorBoundary>
+              <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -52,7 +54,8 @@ const App: React.FC = () => {
 
               {/* Redirect unknown routes to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+              </Routes>
+            </ErrorBoundary>
           </NotificationProvider>
         </AuthProvider>
       </Router>

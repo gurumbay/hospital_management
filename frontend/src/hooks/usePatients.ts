@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getApi } from '../services/api/client';
+import { extractErrorMessage } from '../utils/errorHandling';
 import type {
   PatientResponse,
   PatientCreate,
@@ -21,7 +22,7 @@ export const usePatients = () => {
       const response = await getApi().getPatientsApiV1PatientsGet(params);
       setPatients(response.data || []);
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to load patients';
+      const errorMsg = extractErrorMessage(err) || 'Failed to load patients';
       setError(errorMsg);
       console.error('Error fetching patients:', err);
     } finally {
@@ -38,7 +39,7 @@ export const usePatients = () => {
       const response = await getApi().getPatientApiV1PatientsPatientIdGet(id);
       return response.data || null;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to load patient';
+      const errorMsg = extractErrorMessage(err) || 'Failed to load patient';
       setError(errorMsg);
       console.error('Error fetching patient:', err);
       return null;
@@ -58,7 +59,7 @@ export const usePatients = () => {
       setPatients((prev) => [newPatient, ...prev]);
       return newPatient;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to create patient';
+      const errorMsg = extractErrorMessage(err) || 'Failed to create patient';
       setError(errorMsg);
       console.error('Error creating patient:', err);
       return null;
@@ -81,13 +82,13 @@ export const usePatients = () => {
         );
         return updatedPatient;
       } catch (err: any) {
-        const errorMsg = err.response?.data?.detail || 'Failed to update patient';
-        setError(errorMsg);
-        console.error('Error updating patient:', err);
-        return null;
-      } finally {
-        setLoading(false);
-      }
+          const errorMsg = extractErrorMessage(err) || 'Failed to update patient';
+          setError(errorMsg);
+          console.error('Error updating patient:', err);
+          return null;
+        } finally {
+          setLoading(false);
+        }
     },
     []
   );
@@ -102,7 +103,7 @@ export const usePatients = () => {
       setPatients((prev) => prev.filter((patient) => patient.id !== id));
       return true;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to delete patient';
+      const errorMsg = extractErrorMessage(err) || 'Failed to delete patient';
       setError(errorMsg);
       console.error('Error deleting patient:', err);
       return false;
@@ -126,7 +127,7 @@ export const usePatients = () => {
       setPatients(response.data || []);
       return true;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Search failed';
+      const errorMsg = extractErrorMessage(err) || 'Search failed';
       setError(errorMsg);
       console.error('Search error:', err);
       return false;
@@ -146,7 +147,7 @@ export const usePatients = () => {
         setPatients(response.data || []);
         return true;
       } catch (err: any) {
-        const errorMsg = err.response?.data?.detail || 'Failed to load patients by diagnosis';
+        const errorMsg = extractErrorMessage(err) || 'Failed to load patients by diagnosis';
         setError(errorMsg);
         console.error('Error fetching patients by diagnosis:', err);
         return false;
@@ -167,7 +168,7 @@ export const usePatients = () => {
       setPatients(response.data || []);
       return true;
     } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Failed to load patients by ward';
+      const errorMsg = extractErrorMessage(err) || 'Failed to load patients by ward';
       setError(errorMsg);
       console.error('Error fetching patients by ward:', err);
       return false;

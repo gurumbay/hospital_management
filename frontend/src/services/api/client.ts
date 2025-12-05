@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { getHospitalManagementSystem } from '../../api/generated';
+import { extractErrorMessage } from '../../utils/errorHandling';
 
 // Configure global axios for generated API client
 const API_BASE_URL = (import.meta.env as any).VITE_API_BASE_URL || 'http://localhost:8000';
@@ -29,6 +30,13 @@ axios.interceptors.response.use(
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+    try {
+      const message = extractErrorMessage(error);
+      const status = error.response?.status;
+      window.dispatchEvent(new CustomEvent('api-error', { detail: { message, status } }));
+    } catch (e) {
+      // ignore errors extracting message
     }
     return Promise.reject(error);
   }

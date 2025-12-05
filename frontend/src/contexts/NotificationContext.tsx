@@ -40,6 +40,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }, 5000);
   };
 
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        // @ts-ignore
+        const detail = e.detail || {};
+        const message = detail.message || 'API error';
+        const status = detail.status;
+        // Use error severity for non-2xx
+        notify(message, 'error');
+      } catch (err) {
+        // ignore
+      }
+    };
+    window.addEventListener('api-error', handler as EventListener);
+    return () => window.removeEventListener('api-error', handler as EventListener);
+  }, []);
+
   return (
     <NotificationContext.Provider value={{ notify }}>
       {children}
