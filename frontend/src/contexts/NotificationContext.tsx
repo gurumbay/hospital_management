@@ -46,7 +46,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         // @ts-ignore
         const detail = e.detail || {};
         const message = detail.message || 'API error';
-        const status = detail.status;
         // Use error severity for non-2xx
         notify(message, 'error');
       } catch (err) {

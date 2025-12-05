@@ -68,40 +68,33 @@ const DiagnosisStatsPage: React.FC = () => {
     }
   };
 
-  const handleExportTXT = () => {
+  const handleExportPDF = async () => {
     setExporting(true);
+    setError('');
     try {
-      const totalPatients = stats.reduce((sum, s) => sum + s.patientCount, 0);
-      let content = 'DIAGNOSIS STATISTICS REPORT\n';
-      content += '============================\n\n';
-      content += `Generated: ${new Date().toLocaleString()}\n`;
-      content += `Total Patients: ${totalPatients}\n\n`;
-      content += 'Diagnosis Statistics:\n';
-      content += '-'.repeat(60) + '\n';
-      content += 'Diagnosis                               Count      Percentage\n';
-      content += '-'.repeat(60) + '\n';
+      const response = await getApi().exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet();
 
-      stats.forEach((stat) => {
-        const diagName = stat.diagnosis.name || 'Unknown';
-        const paddedName = diagName.substring(0, 35).padEnd(35);
-        const paddedCount = stat.patientCount.toString().padEnd(10);
-        content += `${paddedName} ${paddedCount} ${stat.percentage}%\n`;
+      if (response.status !== 200) {
+        throw new Error('Failed to generate PDF report');
+      }
+
+      // Type assertion to tell TypeScript it's an ArrayBuffer
+      const arrayBuffer = response.data as ArrayBuffer;
+      const blob = new Blob([arrayBuffer], { 
+        type: 'application/pdf' 
       });
-
-      content += '-'.repeat(60) + '\n';
-      const paddedTotal = 'TOTAL'.padEnd(35);
-      const paddedTotalCount = totalPatients.toString().padEnd(10);
-      content += `${paddedTotal} ${paddedTotalCount} 100%\n`;
-
-      const element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
-      element.setAttribute('download', 'diagnosis_statistics.txt');
-      element.style.display = 'none';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `occupancy_report_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err: any) {
-      setError('Failed to export TXT');
+      setError(err.message || 'Failed to export PDF');
+      console.error(err);
     } finally {
       setExporting(false);
     }
@@ -116,10 +109,10 @@ const DiagnosisStatsPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<FileDownload />}
-          onClick={handleExportTXT}
+          onClick={handleExportPDF}
           disabled={exporting || stats.length === 0}
         >
-          Export TXT
+          {exporting ? 'Exporting...' : 'Export PDF'}
         </Button>
       </Box>
 

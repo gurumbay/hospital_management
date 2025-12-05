@@ -44,19 +44,31 @@ const OccupancyReportPage: React.FC = () => {
 
   const handleExportPDF = async () => {
     setExporting(true);
+    setError('');
     try {
-      // Report generation not yet implemented in backend
-      setError('PDF export is not yet available');
-    } finally {
-      setExporting(false);
-    }
-  };
+      const response = await getApi().exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet();
 
-  const handleExportXLS = async () => {
-    setExporting(true);
-    try {
-      // Report generation not yet implemented in backend
-      setError('XLS export is not yet available');
+      if (response.status !== 200) {
+        throw new Error('Failed to generate PDF report');
+      }
+
+      // Type assertion to tell TypeScript it's an ArrayBuffer
+      const arrayBuffer = response.data as ArrayBuffer;
+      const blob = new Blob([arrayBuffer], { 
+        type: 'application/pdf' 
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `occupancy_report_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      setError(err.message || 'Failed to export PDF');
+      console.error(err);
     } finally {
       setExporting(false);
     }
@@ -77,15 +89,7 @@ const OccupancyReportPage: React.FC = () => {
             onClick={handleExportPDF}
             disabled={exporting || wards.length === 0}
           >
-            Export PDF
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<FileDownload />}
-            onClick={handleExportXLS}
-            disabled={exporting || wards.length === 0}
-          >
-            Export XLS
+            {exporting ? 'Exporting...' : 'Export PDF'}
           </Button>
         </Box>
       </Box>

@@ -10,6 +10,19 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
+    volumes:
+      # bind-mount source for development so container sees latest code
+      - ./backend:/app:cached
+    environment:
+      # ensure the app package is importable
+      - PYTHONPATH=/app
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    # wait for postgres to be ready before running alembic/uvicorn
+    command: sh -c "until pg_isready -h $${POSTGRES_SERVER} -p $${POSTGRES_PORT} -U $${POSTGRES_USER}; do echo 'Waiting for postgres...'; sleep 1; done; alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   postgres:
     image: postgres:17-alpine
@@ -23,6 +36,26 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    image: node:20-bullseye
+    working_dir: /app
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm ci --silent && npm run dev -- --host 0.0.0.0"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:

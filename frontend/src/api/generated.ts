@@ -98,6 +98,7 @@ export interface PatientResponse {
   diagnosis_id: number;
   ward_id?: PatientResponseWardId;
   id: number;
+  diagnosis_name: string;
 }
 
 export type PatientUpdateFirstName = string | null;
@@ -742,6 +743,36 @@ export const getHospitalManagementSystem = () => {
     return axios.default.delete(`/api/v1/patients/${patientId}`, options);
   };
 
+  /**
+ * Export ward occupancy report as PDF.
+
+Returns:
+    PDF file download
+ * @summary Export Occupancy Report Pdf
+ */
+  const exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet = <
+    TData = AxiosResponse<unknown>,
+  >(
+    options?: AxiosRequestConfig,
+  ): Promise<TData> => {
+    return axios.default.get(`/api/v1/reports/occupancy/pdf`, options);
+  };
+
+  /**
+ * Export diagnosis statistics report as PDF.
+
+Returns:
+    PDF file download
+ * @summary Export Diagnosis Stats Report Pdf
+ */
+  const exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet = <
+    TData = AxiosResponse<unknown>,
+  >(
+    options?: AxiosRequestConfig,
+  ): Promise<TData> => {
+    return axios.default.get(`/api/v1/reports/diagnosis-stats/pdf`, options);
+  };
+
   return {
     rootGet,
     healthCheckHealthGet,
@@ -772,6 +803,8 @@ export const getHospitalManagementSystem = () => {
     getPatientApiV1PatientsPatientIdGet,
     updatePatientApiV1PatientsPatientIdPut,
     deletePatientApiV1PatientsPatientIdDelete,
+    exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet,
+    exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet,
   };
 };
 export type RootGetResult = AxiosResponse<unknown>;
@@ -822,3 +855,7 @@ export type UpdatePatientApiV1PatientsPatientIdPutResult =
   AxiosResponse<PatientResponse>;
 export type DeletePatientApiV1PatientsPatientIdDeleteResult =
   AxiosResponse<void>;
+export type ExportOccupancyReportPdfApiV1ReportsOccupancyPdfGetResult =
+  AxiosResponse<unknown>;
+export type ExportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGetResult =
+  AxiosResponse<unknown>;

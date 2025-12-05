@@ -113,7 +113,9 @@ const PatientsPage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'diagnosis_id' || name === 'ward_id' ? parseInt(value) || undefined : value,
+      [name]: name === 'diagnosis_id' || name === 'ward_id' 
+        ? (value === '' ? null : parseInt(value) || null)
+        : value,
     }));
   };
 
@@ -121,8 +123,17 @@ const PatientsPage: React.FC = () => {
     setLoading(true);
     try {
       if (selectedPatient) {
-        // Update existing patient
-        await getApi().updatePatientApiV1PatientsPatientIdPut(selectedPatient.id, formData as any);
+        // Update existing patient - only send fields that were modified
+        const updateData: any = {};
+        
+        // Only include fields in update if they differ from original
+        if (formData.first_name !== selectedPatient.first_name) updateData.first_name = formData.first_name;
+        if (formData.last_name !== selectedPatient.last_name) updateData.last_name = formData.last_name;
+        if (formData.father_name !== selectedPatient.father_name) updateData.father_name = formData.father_name;
+        if (formData.diagnosis_id !== selectedPatient.diagnosis_id) updateData.diagnosis_id = formData.diagnosis_id;
+        if (formData.ward_id !== selectedPatient.ward_id) updateData.ward_id = formData.ward_id;
+        
+        await getApi().updatePatientApiV1PatientsPatientIdPut(selectedPatient.id, updateData);
       } else {
         // Create new patient
         await getApi().createPatientApiV1PatientsPost(formData as PatientCreate);
