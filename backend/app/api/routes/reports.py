@@ -22,11 +22,8 @@ def export_occupancy_report_pdf(
         report_service = ReportService(db)
         pdf_buffer = report_service.generate_occupancy_report()
         
-        # Get bytes from buffer
-        pdf_bytes = pdf_buffer.getvalue()
-        
         return StreamingResponse(
-            BytesIO(pdf_bytes),
+            pdf_buffer,
             media_type="application/pdf",
             headers={"Content-Disposition": "attachment; filename=occupancy_report.pdf"}
         )
@@ -52,11 +49,8 @@ def export_diagnosis_stats_report_pdf(
         report_service = ReportService(db)
         pdf_buffer = report_service.generate_diagnosis_stats_report()
         
-        # Get bytes from buffer
-        pdf_bytes = pdf_buffer.getvalue()
-        
         return StreamingResponse(
-            BytesIO(pdf_bytes),
+            pdf_buffer,
             media_type="application/pdf",
             headers={"Content-Disposition": "attachment; filename=diagnosis_stats_report.pdf"}
         )

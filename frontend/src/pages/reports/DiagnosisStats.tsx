@@ -72,22 +72,23 @@ const DiagnosisStatsPage: React.FC = () => {
     setExporting(true);
     setError('');
     try {
-      const response = await getApi().exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet();
+      const response = await getApi().exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet({
+        responseType: 'blob'
+      });
 
       if (response.status !== 200) {
         throw new Error('Failed to generate PDF report');
       }
 
       // Type assertion to tell TypeScript it's an ArrayBuffer
-      const arrayBuffer = response.data as ArrayBuffer;
-      const blob = new Blob([arrayBuffer], { 
+      const blob = new Blob([response.data as ArrayBuffer], { 
         type: 'application/pdf' 
       });
       
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `occupancy_report_${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = `diagnoses_report_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

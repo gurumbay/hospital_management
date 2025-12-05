@@ -28,10 +28,13 @@ from app.repositories.diagnosis_repository import DiagnosisRepository
 logger = logging.getLogger(__name__)
 
 # Deterministic bundled font path (project assets)
-_BUNDLED_FONT = Path(__file__).resolve().parents[1] / "assets" / "fonts" / "DejaVuSans.ttf"
+_FONT_DIR = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 
-# Other common candidates
-_SYSTEM_CANDIDATES = [
+_FONT_PRIORITY_LIST = [
+    _FONT_DIR / "NotoSans-Regular.ttf",
+    
+    # Системные шрифты
+    Path("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf"),
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
 ]
@@ -57,13 +60,7 @@ def ensure_font_registered() -> str:
     Checks the bundled path first, then common system locations. Falls back to
     the default stylesheet font name if nothing found.
     """
-    # Try bundled font first
-    name = _register_font_if_exists(_BUNDLED_FONT)
-    if name:
-        return name
-
-    # Try system candidates
-    for p in _SYSTEM_CANDIDATES:
+    for p in _FONT_PRIORITY_LIST:
         name = _register_font_if_exists(p)
         if name:
             return name
@@ -92,8 +89,9 @@ class ReportService:
         self.ward_repo = WardRepository(db)
         self.patient_repo = PatientRepository(db)
         self.diagnosis_repo = DiagnosisRepository(db)
-        # Ensure font is available at runtime (container-friendly)
         self.font_name = ensure_font_registered()
+        print(f"Registered fonts: {pdfmetrics.getRegisteredFontNames()}")
+
 
     def _build_pdf(self, title: str, sections: List[tuple[str, List[List[str]]]]) -> BytesIO:
         """Build a PDF with given title and sections.

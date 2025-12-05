@@ -46,15 +46,16 @@ const OccupancyReportPage: React.FC = () => {
     setExporting(true);
     setError('');
     try {
-      const response = await getApi().exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet();
+      const response = await getApi().exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet({
+        responseType: 'blob'
+      });
 
       if (response.status !== 200) {
         throw new Error('Failed to generate PDF report');
       }
 
       // Type assertion to tell TypeScript it's an ArrayBuffer
-      const arrayBuffer = response.data as ArrayBuffer;
-      const blob = new Blob([arrayBuffer], { 
+      const blob = new Blob([response.data as ArrayBuffer], { 
         type: 'application/pdf' 
       });
       
