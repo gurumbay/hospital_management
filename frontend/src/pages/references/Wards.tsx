@@ -15,7 +15,7 @@ import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
 import { extractErrorMessage } from '../../utils/errorHandling';
 import { distributionService } from '../../services/distributionService';
-import type { WardResponse, WardCreate, DiagnosisResponse } from '../../api/generated';
+import type { WardResponse, WardCreate } from '../../api/generated';
 
 type Column = {
   field: string;
@@ -26,7 +26,6 @@ type Column = {
 
 const WardsPage: React.FC = () => {
   const [wards, setWards] = useState<WardResponse[]>([]);
-  const [diagnoses, setDiagnoses] = useState<DiagnosisResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -35,12 +34,10 @@ const WardsPage: React.FC = () => {
   const [formData, setFormData] = useState<WardCreate>({
     name: '',
     max_capacity: 4,
-    diagnosis_id: undefined,
   });
 
   useEffect(() => {
     fetchWards();
-    fetchDiagnoses();
   }, []);
 
   const fetchWards = async () => {
@@ -57,14 +54,6 @@ const WardsPage: React.FC = () => {
     }
   };
 
-  const fetchDiagnoses = async () => {
-    try {
-      const response = await getApi().getDiagnosesApiV1DiagnosesGet();
-      setDiagnoses(response.data || []);
-    } catch (err) {
-      console.error('Failed to load diagnoses:', err);
-    }
-  };
 
   const handleOpenModal = (ward?: WardResponse) => {
     if (ward) {
@@ -72,7 +61,6 @@ const WardsPage: React.FC = () => {
       setFormData({
         name: ward.name,
         max_capacity: ward.max_capacity,
-        diagnosis_id: ward.diagnosis_id,
       });
       setIsEditing(false);
     } else {
@@ -80,7 +68,6 @@ const WardsPage: React.FC = () => {
       setFormData({
         name: '',
         max_capacity: 4,
-        diagnosis_id: undefined,
       });
     }
     setModalOpen(true);
@@ -96,8 +83,8 @@ const WardsPage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'max_capacity' || name === 'diagnosis_id' 
-        ? parseInt(value) || undefined 
+      [name]: name === 'max_capacity'
+        ? parseInt(value) || undefined
         : value,
     }));
   };
@@ -134,11 +121,6 @@ const WardsPage: React.FC = () => {
     }
   };
 
-  const getDiagnosisName = (diagnosisId?: number | null): string => {
-    if (!diagnosisId) return 'Not assigned';
-    const diagnosis = diagnoses.find((d) => d.id === diagnosisId);
-    return diagnosis?.name || 'Unknown';
-  };
 
   const columns: Column[] = [
     { field: 'id', headerName: 'ID', width: 50 },
@@ -166,12 +148,6 @@ const WardsPage: React.FC = () => {
           </Box>
         );
       },
-    },
-    {
-      field: 'diagnosis_id',
-      headerName: 'Diagnosis',
-      width: 150,
-      renderCell: (value) => getDiagnosisName(value),
     },
   ];
 
@@ -224,26 +200,6 @@ const WardsPage: React.FC = () => {
               required
               inputProps={{ min: 1, max: 100 }}
             />
-            <TextField
-              fullWidth
-              select
-              label="Diagnosis"
-              name="diagnosis_id"
-              value={formData.diagnosis_id || ''}
-              onChange={handleFormChange}
-              disabled={!!(selectedWard && !isEditing)}
-              SelectProps={{
-                native: true,
-              }}
-              InputLabelProps={{ shrink: true }}
-            >
-              <option value="">Not assigned</option>
-              {diagnoses.map((diag) => (
-                <option key={diag.id} value={diag.id}>
-                  {diag.name}
-                </option>
-              ))}
-            </TextField>
           </Box>
         </DialogContent>
         <DialogActions>

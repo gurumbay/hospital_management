@@ -4,7 +4,7 @@ from app.repositories.patient_repository import PatientRepository
 from app.repositories.diagnosis_repository import DiagnosisRepository
 from app.repositories.ward_repository import WardRepository
 from app.schemas.patient import PatientCreate, PatientUpdate, PatientResponse
-from app.core.exceptions import PatientNotFoundException, DiagnosisNotFoundException, WardNotFoundException, WardCapacityException
+from app.core.exceptions import PatientNotFoundException, DiagnosisNotFoundException, WardNotFoundException, WardCapacityException, WardDiagnosisException
 
 
 class PatientService:
@@ -47,22 +47,10 @@ class PatientService:
             if existing_patients:
                 existing_diagnosis = existing_patients[0].diagnosis_id
                 if existing_diagnosis != patient_data.diagnosis_id:
-                    raise WardCapacityException(
-                        f"Ward {ward.name} contains patients with different diagnosis"
-                    )
+                    raise WardDiagnosisException(ward.name)
         
         # Create patient data
         patient_dict = patient_data.model_dump()
-        
-        # Auto-assign to ward if not specified
-        if not patient_data.ward_id:
-            ward = self._find_available_ward(patient_data.diagnosis_id)
-            if ward:
-                patient_dict["ward_id"] = ward.id
-                
-                # If ward has no diagnosis assigned yet, assign it
-                if ward.diagnosis_id is None:
-                    self.ward_repo.update(ward, {"diagnosis_id": patient_data.diagnosis_id})
         
         # Create patient; DB triggers will enforce capacity and update ward occupancy
         db_patient = self.patient_repo.create(patient_dict)
@@ -97,9 +85,7 @@ class PatientService:
                     existing_diagnosis = existing_patients[0].diagnosis_id
                     # Allow only if patient has same diagnosis
                     if patient.diagnosis_id != existing_diagnosis:
-                        raise WardCapacityException(
-                            f"Ward {new_ward.name} contains patients with different diagnosis"
-                        )
+                        raise WardDiagnosisException(new_ward.name)
         
         # Handle diagnosis change - will be caught by trigger to clear ward
         if "diagnosis_id" in update_data:
@@ -145,11 +131,11 @@ class PatientService:
             Ward instance or None if no suitable ward found
         """
         # Get all wards assigned to this diagnosis
-        wards_for_diagnosis = self.ward_repo.get_wards_by_diagnosis(diagnosis_id)
+        awailable_wards = self.ward_repo.get_available_wards()
         
         # Filter wards that have available capacity and only this diagnosis
         suitable_wards = []
-        for ward in wards_for_diagnosis:
+        for ward in awailable_wards:
             # Check if ward has capacity
             if ward.current_occupancy >= ward.max_capacity:
                 continue

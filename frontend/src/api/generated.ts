@@ -98,7 +98,6 @@ export interface PatientResponse {
   diagnosis_id: number;
   ward_id?: PatientResponseWardId;
   id: number;
-  diagnosis_name: string;
 }
 
 export type PatientUpdateFirstName = string | null;

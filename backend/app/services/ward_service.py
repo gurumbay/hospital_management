@@ -2,17 +2,15 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.repositories.ward_repository import WardRepository
-from app.repositories.diagnosis_repository import DiagnosisRepository
 from app.schemas.ward import WardCreate, WardUpdate, WardResponse
-from app.core.exceptions import WardNotFoundException, DiagnosisNotFoundException
+from app.core.exceptions import WardNotFoundException
 
 
 class WardService:
     """Service for ward management."""
-    
+
     def __init__(self, db: Session):
         self.ward_repo = WardRepository(db)
-        self.diagnosis_repo = DiagnosisRepository(db)
     
     def get_ward(self, ward_id: int) -> WardResponse:
         """Get a ward by ID."""
@@ -28,10 +26,6 @@ class WardService:
     
     def create_ward(self, ward_data: WardCreate) -> WardResponse:
         """Create a new ward."""
-        # Check if diagnosis exists
-        if ward_data.diagnosis_id and not self.diagnosis_repo.get(ward_data.diagnosis_id):
-            raise DiagnosisNotFoundException(ward_data.diagnosis_id)
-        
         # Check if ward name already exists
         existing = self.ward_repo.get_by_name(ward_data.name)
         if existing:
@@ -39,7 +33,7 @@ class WardService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ward with this name already exists",
             )
-        
+
         db_ward = self.ward_repo.create(ward_data.model_dump())
         return WardResponse.model_validate(db_ward)
     
@@ -48,13 +42,9 @@ class WardService:
         ward = self.ward_repo.get(ward_id)
         if not ward:
             raise WardNotFoundException(ward_id)
-        
-        # Check if diagnosis exists
-        if ward_data.diagnosis_id and not self.diagnosis_repo.get(ward_data.diagnosis_id):
-            raise DiagnosisNotFoundException(ward_data.diagnosis_id)
-        
+
         updated_ward = self.ward_repo.update(
-            ward, 
+            ward,
             ward_data.model_dump(exclude_unset=True)
         )
         return WardResponse.model_validate(updated_ward)

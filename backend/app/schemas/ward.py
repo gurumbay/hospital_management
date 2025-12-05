@@ -7,7 +7,6 @@ class WardBase(BaseSchema):
     """Base ward schema."""
     name: str = Field(..., min_length=2, max_length=50)
     max_capacity: int = Field(..., gt=0, le=100)
-    diagnosis_id: Optional[int] = None
 
 
 class WardCreate(WardBase):
@@ -19,7 +18,6 @@ class WardUpdate(BaseSchema):
     """Schema for updating a ward."""
     name: Optional[str] = None
     max_capacity: Optional[int] = None
-    diagnosis_id: Optional[int] = None
 
 
 class WardResponse(WardBase):

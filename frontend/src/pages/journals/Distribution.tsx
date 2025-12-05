@@ -95,7 +95,7 @@ const DistributionPage: React.FC = () => {
       // Iterate over a shallow copy because we'll be modifying state inside the loop
       const patientsToAssign = [...unassignedPatients];
       for (const patient of patientsToAssign) {
-        const suggestedWard = distributionService.suggestWard(patient, wards);
+        const suggestedWard = distributionService.suggestWard(wards);
         if (suggestedWard) {
           try {
             await getApi().updatePatientApiV1PatientsPatientIdPut(patient.id, {

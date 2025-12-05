@@ -14,16 +14,11 @@ def get_wards(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    diagnosis_id: int = Query(None)
+    limit: int = Query(100, ge=1, le=100)
 ):
     """Get all wards."""
-    filters = {}
-    if diagnosis_id:
-        filters["diagnosis_id"] = diagnosis_id
-    
     ward_service = WardService(db)
-    return ward_service.get_wards(skip=skip, limit=limit, **filters)
+    return ward_service.get_wards(skip=skip, limit=limit)
 
 
 @router.get("/available", response_model=List[WardResponse])
