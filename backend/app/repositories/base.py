@@ -33,25 +33,43 @@ class BaseRepository(Generic[ModelType]):
         
         return query.offset(skip).limit(limit).all()
     
-    def create(self, obj_in: Dict[str, Any]) -> ModelType:
-        """Create a new record."""
+    def create(self, obj_in: Dict[str, Any], commit: bool = True) -> ModelType:
+        """Create a new record.
+
+        Args:
+            obj_in: dict of fields to create the model with
+            commit: whether to commit the transaction (default True)
+        """
         db_obj = self.model(**obj_in)
         self.db.add(db_obj)
-        self.db.commit()
-        self.db.refresh(db_obj)
+        if commit:
+            self.db.commit()
+            self.db.refresh(db_obj)
+        else:
+            # flush to assign PKs/etc without committing the whole transaction
+            self.db.flush()
         return db_obj
     
-    def update(self, db_obj: ModelType, obj_in: Dict[str, Any]) -> ModelType:
-        """Update an existing record."""
+    def update(self, db_obj: ModelType, obj_in: Dict[str, Any], commit: bool = True) -> ModelType:
+        """Update an existing record.
+
+        Args:
+            db_obj: the ORM instance to update
+            obj_in: dict of fields to update
+            commit: whether to commit the transaction (default True)
+        """
         obj_data = jsonable_encoder(db_obj)
-        
+
         for field in obj_data:
             if field in obj_in:
                 setattr(db_obj, field, obj_in[field])
-        
+
         self.db.add(db_obj)
-        self.db.commit()
-        self.db.refresh(db_obj)
+        if commit:
+            self.db.commit()
+            self.db.refresh(db_obj)
+        else:
+            self.db.flush()
         return db_obj
     
     def delete(self, id: int) -> ModelType:

@@ -6,7 +6,7 @@ from app.schemas.ward import WardResponse, WardCreate, WardUpdate
 from app.services.ward_service import WardService
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(prefix="/wards", tags=["wards"])
 
 
 @router.get("/", response_model=List[WardResponse])

@@ -6,7 +6,7 @@ from app.schemas.user import UserResponse, UserCreate, UserUpdate
 from app.services.user_service import UserService
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=List[UserResponse])

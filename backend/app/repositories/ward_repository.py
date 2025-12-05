@@ -33,17 +33,26 @@ class WardRepository(BaseRepository[Ward]):
             Ward.current_occupancy < Ward.max_capacity
         ).all()
     
-    def update_occupancy(self, ward_id: int, increment: bool = True) -> Optional[Ward]:
-        """Update ward occupancy."""
+    def update_occupancy(self, ward_id: int, increment: bool = True, commit: bool = True) -> Optional[Ward]:
+        """Update ward occupancy.
+
+        Args:
+            ward_id: id of ward to update
+            increment: True to increment, False to decrement
+            commit: whether to commit the transaction (default True)
+        """
         ward = self.get(ward_id)
         if not ward:
             return None
-        
+
         if increment:
             ward.current_occupancy += 1
         else:
             ward.current_occupancy = max(0, ward.current_occupancy - 1)
-        
-        self.db.commit()
-        self.db.refresh(ward)
+
+        if commit:
+            self.db.commit()
+            self.db.refresh(ward)
+        else:
+            self.db.flush()
         return ward

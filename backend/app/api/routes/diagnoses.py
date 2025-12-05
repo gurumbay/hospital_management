@@ -6,7 +6,7 @@ from app.schemas.diagnosis import DiagnosisResponse, DiagnosisCreate, DiagnosisU
 from app.services.diagnosis_service import DiagnosisService
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(prefix="/diagnoses", tags=["diagnoses"])
 
 
 @router.get("/", response_model=List[DiagnosisResponse])

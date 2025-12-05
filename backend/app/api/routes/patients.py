@@ -6,7 +6,7 @@ from app.schemas.patient import PatientResponse, PatientCreate, PatientUpdate
 from app.services.patient_service import PatientService
 from app.models.user import User
 
-router = APIRouter()
+router = APIRouter(prefix="/patients", tags=["patients"])
 
 
 @router.get("/", response_model=List[PatientResponse])

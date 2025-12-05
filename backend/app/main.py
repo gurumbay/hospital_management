@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database.base import Base
-from app.database.connection import engine
 from app.api import health_routers, api_routers
 
 
@@ -38,6 +36,7 @@ async def on_startup():
     """Run on application startup."""
     print(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     print(f"Database: {settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}")
+    create_default_admin()
 
 
 async def on_shutdown():
@@ -66,6 +65,28 @@ def register_routers(app: FastAPI):
     # API routers (with /api/v1 prefix)
     for router in api_routers:
         app.include_router(router, prefix=settings.API_V1_STR)
+
+
+def create_default_admin():
+    from app.database.connection import SessionLocal
+    from app.models.user import User, UserRole
+    from app.core.security import get_password_hash
+    from sqlalchemy import select
+    
+    with SessionLocal() as session:
+        result = session.execute(select(User).where(User.username == "admin"))
+        if not result.scalar_one_or_none():
+            admin = User(
+                username="admin",
+                email="admin@gmail.com",
+                hashed_password=get_password_hash("admin123"),
+                first_name="Администратор",
+                last_name="Системы",
+                role=UserRole.ADMIN,
+                is_active=True,
+            )
+            session.add(admin)
+            session.commit()
 
 
 app = create_application()

@@ -51,12 +51,8 @@ class PatientService:
             if ward:
                 patient_dict["ward_id"] = ward.id
         
+        # Create patient; DB triggers will enforce capacity and update ward occupancy
         db_patient = self.patient_repo.create(patient_dict)
-        
-        # Update ward occupancy if ward is assigned
-        if db_patient.ward_id:
-            self.ward_repo.update_occupancy(db_patient.ward_id, increment=True)
-        
         return PatientResponse.model_validate(db_patient)
     
     def update_patient(self, patient_id: int, patient_data: PatientUpdate) -> PatientResponse:
@@ -83,11 +79,9 @@ class PatientService:
                     raise WardCapacityException(new_ward.name)
             
             # Update occupancies
-            if old_ward_id:
-                self.ward_repo.update_occupancy(old_ward_id, increment=False)
-            if new_ward_id:
-                self.ward_repo.update_occupancy(new_ward_id, increment=True)
-        
+            # Note: occupancy is managed by DB triggers; just perform the update
+            pass
+
         updated_patient = self.patient_repo.update(patient, update_data)
         return PatientResponse.model_validate(updated_patient)
     
@@ -97,10 +91,7 @@ class PatientService:
         if not patient:
             raise PatientNotFoundException(patient_id)
         
-        # Update ward occupancy if patient was in a ward
-        if patient.ward_id:
-            self.ward_repo.update_occupancy(patient.ward_id, increment=False)
-        
+        # Deletion will be handled by DB triggers (they should adjust occupancy)
         self.patient_repo.delete(patient_id)
     
     def search_patients_by_name(self, name_query: str) -> List[PatientResponse]:
