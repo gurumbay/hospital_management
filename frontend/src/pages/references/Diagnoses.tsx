@@ -15,12 +15,7 @@ import { getApi } from '../../services/api/client';
 import { extractErrorMessage } from '../../utils/errorHandling';
 import { useNotification } from '../../contexts/NotificationContext';
 import type { DiagnosisResponse, DiagnosisCreate } from '../../api/generated';
-
-type Column = {
-  field: string;
-  headerName: string;
-  width?: number | string;
-};
+import type { Column } from '../../components/ui/CustomDataGrid';
 
 const DiagnosesPage: React.FC = () => {
   const [diagnoses, setDiagnoses] = useState<DiagnosisResponse[]>([]);
@@ -115,8 +110,8 @@ const DiagnosesPage: React.FC = () => {
   };
 
   const columns: Column[] = [
-    { field: 'id', headerName: 'ID', width: 50 },
-    { field: 'name', headerName: 'Diagnosis Name', width: 300 },
+    { field: 'id', headerName: 'ID', width: 50, sortable: true },
+    { field: 'name', headerName: 'Diagnosis Name', width: 300, sortable: true },
   ];
 
   return (

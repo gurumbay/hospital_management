@@ -16,13 +16,7 @@ import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
 import { distributionService } from '../../services/distributionService';
 import type { PatientResponse, WardResponse } from '../../api/generated';
-
-type Column = {
-  field: string;
-  headerName: string;
-  width?: number | string;
-  renderCell?: (value: any, row: any) => React.ReactNode;
-};
+import type { Column } from '../../components/ui/CustomDataGrid';
 
 const DistributionPage: React.FC = () => {
   const [unassignedPatients, setUnassignedPatients] = useState<PatientResponse[]>([]);
@@ -126,10 +120,10 @@ const DistributionPage: React.FC = () => {
   };
 
   const patientColumns: Column[] = [
-    { field: 'id', headerName: 'ID', width: 50 },
-    { field: 'first_name', headerName: 'First Name', width: 120 },
-    { field: 'last_name', headerName: 'Last Name', width: 120 },
-    { field: 'diagnosis_id', headerName: 'Diagnosis', width: 120 },
+    { field: 'id', headerName: 'ID', width: 50, sortable: true },
+    { field: 'first_name', headerName: 'First Name', width: 120, sortable: true },
+    { field: 'last_name', headerName: 'Last Name', width: 120, sortable: true },
+    { field: 'diagnosis_id', headerName: 'Diagnosis', width: 120, sortable: true },
   ];
 
   return (

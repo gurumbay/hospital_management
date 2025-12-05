@@ -10,13 +10,15 @@ import {
   TablePagination,
   Box,
   CircularProgress,
+  TableSortLabel,
 } from '@mui/material';
 
-interface Column {
+export interface Column {
   field: string;
   headerName: string;
   width?: number | string;
   renderCell?: (value: any, row: any) => React.ReactNode;
+  sortable?: boolean;
 }
 
 interface CustomDataGridProps {
@@ -35,6 +37,8 @@ export const CustomDataGrid: React.FC<CustomDataGridProps> = ({
 }) => {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [sortField, setSortField] = React.useState<string>('');
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -45,7 +49,43 @@ export const CustomDataGrid: React.FC<CustomDataGridProps> = ({
     setPage(0);
   };
 
-  const paginatedData = data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const handleSort = (field: string) => {
+    const isAsc = sortField === field && sortDirection === 'asc';
+    setSortDirection(isAsc ? 'desc' : 'asc');
+    setSortField(field);
+    setPage(0);
+  };
+
+  const sortedData = React.useMemo(() => {
+    if (!sortField) return data;
+
+    return [...data].sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
+      if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
+
+      // Handle string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+
+      // Handle number comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+
+      // Default comparison
+      const comparison = String(aValue).localeCompare(String(bValue));
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [data, sortField, sortDirection]);
+
+  const paginatedData = sortedData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -73,9 +113,20 @@ export const CustomDataGrid: React.FC<CustomDataGridProps> = ({
                     width: column.width,
                     fontWeight: 'bold',
                     textAlign: 'left',
+                    cursor: column.sortable ? 'pointer' : 'default',
                   }}
+                  onClick={() => column.sortable && handleSort(column.field)}
                 >
-                  {column.headerName}
+                  {column.sortable ? (
+                    <TableSortLabel
+                      active={sortField === column.field}
+                      direction={sortField === column.field ? sortDirection : 'asc'}
+                    >
+                      {column.headerName}
+                    </TableSortLabel>
+                  ) : (
+                    column.headerName
+                  )}
                 </TableCell>
               ))}
             </TableRow>

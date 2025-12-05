@@ -12,17 +12,11 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
+import type { Column } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
 import { extractErrorMessage } from '../../utils/errorHandling';
 import { distributionService } from '../../services/distributionService';
 import type { WardResponse, WardCreate } from '../../api/generated';
-
-type Column = {
-  field: string;
-  headerName: string;
-  width?: number | string;
-  renderCell?: (value: any, row: any) => React.ReactNode;
-};
 
 const WardsPage: React.FC = () => {
   const [wards, setWards] = useState<WardResponse[]>([]);
@@ -123,14 +117,15 @@ const WardsPage: React.FC = () => {
 
 
   const columns: Column[] = [
-    { field: 'id', headerName: 'ID', width: 50 },
-    { field: 'name', headerName: 'Ward Name', width: 150 },
-    { field: 'max_capacity', headerName: 'Capacity', width: 100 },
-    { field: 'current_occupancy', headerName: 'Occupied', width: 100 },
+    { field: 'id', headerName: 'ID', width: 50, sortable: true },
+    { field: 'name', headerName: 'Ward Name', width: 150, sortable: true },
+    { field: 'max_capacity', headerName: 'Capacity', width: 100, sortable: true },
+    { field: 'current_occupancy', headerName: 'Occupied', width: 100, sortable: true },
     {
       field: 'occupancy_percent',
       headerName: 'Usage %',
       width: 150,
+      sortable: false,
       renderCell: (_value, row) => {
         const percent = distributionService.getOccupancyPercent(row);
         return (

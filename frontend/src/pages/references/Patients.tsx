@@ -13,13 +13,7 @@ import {
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
 import type { PatientResponse, PatientCreate, DiagnosisResponse, WardResponse } from '../../api/generated';
-
-type Column = {
-  field: string;
-  headerName: string;
-  width?: number | string;
-  renderCell?: (value: any, row: any) => React.ReactNode;
-};
+import type { Column } from '../../components/ui/CustomDataGrid';
 
 const PatientsPage: React.FC = () => {
   const [patients, setPatients] = useState<PatientResponse[]>([]);
@@ -174,20 +168,22 @@ const PatientsPage: React.FC = () => {
   };
 
   const columns: Column[] = [
-    { field: 'id', headerName: 'ID', width: 50 },
-    { field: 'last_name', headerName: 'Last Name', width: 120 },
-    { field: 'first_name', headerName: 'First Name', width: 120 },
-    { field: 'father_name', headerName: 'Father Name', width: 120 },
+    { field: 'id', headerName: 'ID', width: 50, sortable: true },
+    { field: 'last_name', headerName: 'Last Name', width: 120, sortable: true },
+    { field: 'first_name', headerName: 'First Name', width: 120, sortable: true },
+    { field: 'father_name', headerName: 'Father Name', width: 120, sortable: true },
     {
       field: 'diagnosis_id',
       headerName: 'Diagnosis',
       width: 150,
+      sortable: false,
       renderCell: (value) => getDiagnosisName(value),
     },
     {
       field: 'ward_id',
       headerName: 'Ward',
       width: 150,
+      sortable: false,
       renderCell: (value) => getWardName(value),
     },
   ];
