@@ -67,3 +67,8 @@ class UserNotFoundException(NotFoundException):
 class WardCapacityException(BadRequestException):
     def __init__(self, ward_name: str):
         super().__init__(f"Ward '{ward_name}' has reached maximum capacity")
+
+
+class WardDiagnosisException(BadRequestException):
+    def __init__(self, ward_name: str):
+        super().__init__(f"Ward '{ward_name}' contains patients with different diagnosis")

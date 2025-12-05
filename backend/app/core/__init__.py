@@ -19,6 +19,7 @@ from app.core.exceptions import (
     DiagnosisNotFoundException,
     UserNotFoundException,
     WardCapacityException,
+    WardDiagnosisException,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "DiagnosisNotFoundException",
     "UserNotFoundException",
     "WardCapacityException",
+    "WardDiagnosisException",
 ]

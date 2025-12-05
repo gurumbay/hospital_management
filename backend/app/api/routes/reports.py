@@ -1,13 +1,10 @@
-"""Routes for report generation and export."""
-
 from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_active_user
+from app.api.deps import get_db
 from app.services.report_service import ReportService
-from app.models.user import User
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -15,7 +12,6 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("/occupancy/pdf")
 def export_occupancy_report_pdf(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Export ward occupancy report as PDF.
     
@@ -46,7 +42,6 @@ def export_occupancy_report_pdf(
 @router.get("/diagnosis-stats/pdf")
 def export_diagnosis_stats_report_pdf(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
 ):
     """Export diagnosis statistics report as PDF.
     
