@@ -2,7 +2,7 @@
 API routers package.
 """
 
-from app.api.routes import auth, users, diagnoses, wards, patients, health
+from app.api.routes import auth, users, diagnoses, wards, patients, health, reports
 
 health_routers = [health.router]
 
@@ -13,6 +13,7 @@ api_routers = [
     diagnoses.router,
     wards.router,
     patients.router,
+    reports.router,
 ]
 
 __all__ = ["health_routers", "api_routers"]
