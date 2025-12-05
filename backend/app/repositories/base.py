@@ -58,11 +58,11 @@ class BaseRepository(Generic[ModelType]):
             obj_in: dict of fields to update
             commit: whether to commit the transaction (default True)
         """
-        obj_data = jsonable_encoder(db_obj)
-
-        for field in obj_data:
-            if field in obj_in:
-                setattr(db_obj, field, obj_in[field])
+        # Iterate over fields provided in obj_in, not obj_data
+        # This ensures we properly handle updates to None values
+        for field, value in obj_in.items():
+            if hasattr(db_obj, field):
+                setattr(db_obj, field, value)
 
         self.db.add(db_obj)
         if commit:

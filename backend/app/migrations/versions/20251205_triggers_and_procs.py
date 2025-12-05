@@ -49,6 +49,39 @@ def upgrade():
     $$;
     """)
 
+    # Create BEFORE trigger to enforce diagnosis consistency (prevent mixed diagnoses in ward)
+    op.execute("""
+    CREATE OR REPLACE FUNCTION fn_patients_before_check_ward_diagnosis()
+    RETURNS trigger LANGUAGE plpgsql AS $$
+    DECLARE
+      ward_has_patients BOOLEAN;
+      ward_diagnosis INT;
+    BEGIN
+      -- Only check when assigning a ward (INSERT or when ward_id changes on UPDATE)
+      IF (TG_OP = 'INSERT' AND NEW.ward_id IS NOT NULL) OR
+         (TG_OP = 'UPDATE' AND NEW.ward_id IS DISTINCT FROM OLD.ward_id AND NEW.ward_id IS NOT NULL) THEN
+        -- Check if ward already has patients
+        SELECT EXISTS(SELECT 1 FROM patients WHERE ward_id = NEW.ward_id LIMIT 1)
+        INTO ward_has_patients;
+        
+        IF ward_has_patients THEN
+          -- Get the diagnosis of existing patients in the ward
+          SELECT DISTINCT diagnosis_id INTO ward_diagnosis
+          FROM patients 
+          WHERE ward_id = NEW.ward_id AND ward_id IS NOT NULL;
+          
+          -- Ensure new patient has the same diagnosis
+          IF ward_diagnosis IS NOT NULL AND ward_diagnosis != NEW.diagnosis_id THEN
+            RAISE EXCEPTION 'Ward % already contains patients with different diagnosis (diagnosis_id=%)', 
+                           NEW.ward_id, ward_diagnosis;
+          END IF;
+        END IF;
+      END IF;
+      RETURN NEW;
+    END;
+    $$;
+    """)
+
     # Create AFTER trigger to maintain ward occupancy counters on INSERT/UPDATE/DELETE
     op.execute("""
     CREATE OR REPLACE FUNCTION fn_patients_after_maintain_occupancy()
@@ -94,6 +127,14 @@ def upgrade():
       BEFORE INSERT OR UPDATE ON patients
       FOR EACH ROW
       EXECUTE FUNCTION fn_patients_before_capacity_check();
+    """)
+
+    op.execute("""
+    DROP TRIGGER IF EXISTS tr_patients_before_diagnosis_consistency ON patients;
+    CREATE TRIGGER tr_patients_before_diagnosis_consistency
+      BEFORE INSERT OR UPDATE ON patients
+      FOR EACH ROW
+      EXECUTE FUNCTION fn_patients_before_check_ward_diagnosis();
     """)
 
     op.execute("""
@@ -149,12 +190,14 @@ def downgrade():
     # Drop triggers and functions
     op.execute("""
     DROP TRIGGER IF EXISTS tr_patients_after_occupancy ON patients;
+    DROP TRIGGER IF EXISTS tr_patients_before_diagnosis_consistency ON patients;
     DROP TRIGGER IF EXISTS tr_patients_before_capacity ON patients;
     DROP TRIGGER IF EXISTS tr_patients_before_diagnosis ON patients;
     """)
 
     op.execute("""
     DROP FUNCTION IF EXISTS fn_patients_after_maintain_occupancy();
+    DROP FUNCTION IF EXISTS fn_patients_before_check_ward_diagnosis();
     DROP FUNCTION IF EXISTS fn_patients_before_capacity_check();
     DROP FUNCTION IF EXISTS fn_patients_before_update_handle_diagnosis();
     """)
