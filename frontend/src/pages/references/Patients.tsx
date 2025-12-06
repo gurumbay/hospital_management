@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
+import { extractErrorMessage } from '../../utils/errorHandling';
 import type { PatientResponse, PatientCreate, DiagnosisResponse, WardResponse } from '../../api/generated';
 import type { Column } from '../../components/ui/CustomDataGrid';
 
@@ -115,6 +116,7 @@ const PatientsPage: React.FC = () => {
 
   const handleSave = async () => {
     setLoading(true);
+    setError('');
     try {
       if (selectedPatient) {
         // Update existing patient - only send fields that were modified
@@ -127,7 +129,10 @@ const PatientsPage: React.FC = () => {
         if (formData.diagnosis_id !== selectedPatient.diagnosis_id) updateData.diagnosis_id = formData.diagnosis_id;
         if (formData.ward_id !== selectedPatient.ward_id) updateData.ward_id = formData.ward_id;
         
-        await getApi().updatePatientApiV1PatientsPatientIdPut(selectedPatient.id, updateData);
+        // Only send update if something changed
+        if (Object.keys(updateData).length > 0) {
+          await getApi().updatePatientApiV1PatientsPatientIdPut(selectedPatient.id, updateData);
+        }
       } else {
         // Create new patient
         await getApi().createPatientApiV1PatientsPost(formData as PatientCreate);
@@ -135,22 +140,23 @@ const PatientsPage: React.FC = () => {
       fetchPatients();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save patient');
+      setError(extractErrorMessage(err) || 'Failed to save patient');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!selectedPatient || !window.confirm('Are you sure?')) return;
+    if (!selectedPatient || !window.confirm('Are you sure you want to delete this patient?')) return;
 
     setLoading(true);
+    setError('');
     try {
       await getApi().deletePatientApiV1PatientsPatientIdDelete(selectedPatient.id);
       fetchPatients();
       handleCloseModal();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete patient');
+      setError(extractErrorMessage(err) || 'Failed to delete patient');
     } finally {
       setLoading(false);
     }
@@ -216,7 +222,7 @@ const PatientsPage: React.FC = () => {
           {selectedPatient ? 'View Patient' : 'Add New Patient'}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <TextField
               fullWidth
               label="First Name"
@@ -255,6 +261,7 @@ const PatientsPage: React.FC = () => {
                 native: true,
               }}
               InputLabelProps={{ shrink: true }}
+              required
             >
               <option value="">Select diagnosis</option>
               {diagnoses.map((diag) => (

@@ -70,9 +70,14 @@ const DiagnosesPage: React.FC = () => {
 
   const handleSave = async () => {
     setLoading(true);
+    setError('');
     try {
       if (selectedDiagnosis) {
-        await getApi().updateDiagnosisApiV1DiagnosesDiagnosisIdPut(selectedDiagnosis.id, formData);
+        const updateData: any = {};
+        
+        if (formData.name !== selectedDiagnosis.name) updateData.name = formData.name;
+        
+        await getApi().updateDiagnosisApiV1DiagnosesDiagnosisIdPut(selectedDiagnosis.id, updateData);
       } else {
         await getApi().createDiagnosisApiV1DiagnosesPost(formData);
       }
@@ -86,15 +91,17 @@ const DiagnosesPage: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!selectedDiagnosis || !window.confirm('Are you sure?')) return;
+    if (!selectedDiagnosis || !window.confirm('Are you sure you want to delete this diagnosis?')) return;
 
     setLoading(true);
+    setError('');
     try {
-      // Check whether any patients reference this diagnosis
-      const resp = await getApi().getPatientsApiV1PatientsGet({ diagnosis_id: selectedDiagnosis.id, limit: 1 });
+      const resp = await getApi().getPatientsApiV1PatientsGet({ 
+        diagnosis_id: selectedDiagnosis.id, 
+        limit: 1 
+      });
       if (resp.data && resp.data.length > 0) {
-        // Notify user and do not attempt deletion
-        notify('Cannot delete diagnosis: it is assigned to one or more patients', 'error');
+        notify(`Cannot delete diagnosis "${selectedDiagnosis.name}": it is assigned to one or more patients`, 'error');
         setLoading(false);
         return;
       }
@@ -142,15 +149,17 @@ const DiagnosesPage: React.FC = () => {
           {selectedDiagnosis ? 'View Diagnosis' : 'Add New Diagnosis'}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <TextField
-            fullWidth
-            label="Diagnosis Name"
-            name="name"
-            value={formData.name}
-            onChange={handleFormChange}
-            disabled={!!(selectedDiagnosis && !isEditing)}
-            required
-          />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              <TextField
+                fullWidth
+                label="Diagnosis Name"
+                name="name"
+                value={formData.name}
+                onChange={handleFormChange}
+                disabled={!!(selectedDiagnosis && !isEditing)}
+                required
+              />
+          </Box>
         </DialogContent>
         <DialogActions>
           {selectedDiagnosis && !isEditing ? (

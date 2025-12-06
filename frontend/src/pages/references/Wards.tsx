@@ -85,6 +85,7 @@ const WardsPage: React.FC = () => {
 
   const handleSave = async () => {
     setLoading(true);
+    setError('');
     try {
       if (selectedWard) {
         await getApi().updateWardApiV1WardsWardIdPut(selectedWard.id, formData);
@@ -104,6 +105,7 @@ const WardsPage: React.FC = () => {
     if (!selectedWard || !window.confirm('Are you sure?')) return;
 
     setLoading(true);
+    setError('');
     try {
       await getApi().deleteWardApiV1WardsWardIdDelete(selectedWard.id);
       fetchWards();
@@ -174,7 +176,7 @@ const WardsPage: React.FC = () => {
           {selectedWard ? 'View Ward' : 'Add New Ward'}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <TextField
               fullWidth
               label="Ward Name"

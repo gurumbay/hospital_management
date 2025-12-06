@@ -112,6 +112,130 @@ def upgrade():
     $$;
     """)
 
+    # Create BEFORE trigger for ward deletion - move patients to compatible wards
+    op.execute("""
+    CREATE OR REPLACE FUNCTION fn_wards_before_delete_move_patients()
+    RETURNS TRIGGER LANGUAGE plpgsql AS $$
+    DECLARE
+        diag_id INT;
+        patient RECORD;
+        target RECORD;
+        needed INT;
+        remaining INT;
+        total_free INT := 0;
+    BEGIN
+        -- Get diagnosis from patients in the ward being deleted
+        SELECT diagnosis_id INTO diag_id
+        FROM patients
+        WHERE ward_id = OLD.id
+        LIMIT 1;
+
+        -- Count patients that need to be relocated
+        SELECT COUNT(*) INTO needed FROM patients WHERE ward_id = OLD.id;    
+        remaining := needed;
+
+        -- If ward has no patients, delete it
+        IF needed = 0 THEN
+            RETURN OLD;
+        END IF;
+
+        -- Calculate total free capacity in compatible wards
+        -- (wards with same diagnosis or empty wards)
+        SELECT COALESCE(SUM(w.max_capacity - COALESCE(p.cnt, 0)), 0)
+        INTO total_free
+        FROM wards w
+        LEFT JOIN (
+            SELECT ward_id, COUNT(*) AS cnt FROM patients GROUP BY ward_id
+        ) p ON p.ward_id = w.id
+        WHERE w.id <> OLD.id
+          AND (
+                EXISTS (
+                    SELECT 1 
+                    FROM patients pp 
+                    WHERE pp.ward_id = w.id 
+                      AND pp.diagnosis_id = diag_id
+                )
+                OR NOT EXISTS (
+                    SELECT 1 
+                    FROM patients pp 
+                    WHERE pp.ward_id = w.id
+                )
+              );
+
+        -- Check if there's enough capacity
+        IF total_free < needed THEN
+            RAISE EXCEPTION 
+                'Not enough free beds to move patients from ward "%" (needed: %, available: %)', 
+                OLD.name, needed, total_free;
+        END IF;
+
+        -- Process candidate wards, starting with most spacious ones
+        FOR target IN
+            SELECT 
+                w.id, 
+                (w.max_capacity - COALESCE(p.cnt, 0)) AS free
+            FROM wards w
+            LEFT JOIN (
+                SELECT ward_id, COUNT(*) AS cnt 
+                FROM patients 
+                GROUP BY ward_id
+            ) p ON p.ward_id = w.id
+            WHERE w.id <> OLD.id
+              AND (
+                    EXISTS (
+                        SELECT 1 
+                        FROM patients pp 
+                        WHERE pp.ward_id = w.id 
+                          AND pp.diagnosis_id = diag_id
+                    )
+                    OR NOT EXISTS (
+                        SELECT 1 
+                        FROM patients pp 
+                        WHERE pp.ward_id = w.id
+                    )
+                  )
+              AND (w.max_capacity - COALESCE(p.cnt, 0)) > 0
+            ORDER BY free DESC
+        LOOP
+            -- Move patients to current ward while it has capacity
+            FOR patient IN
+                SELECT id 
+                FROM patients 
+                WHERE ward_id = OLD.id 
+                LIMIT target.free
+            LOOP
+                UPDATE patients 
+                SET ward_id = target.id 
+                WHERE id = patient.id;
+                
+                remaining := remaining - 1;
+                EXIT WHEN remaining = 0;
+            END LOOP;
+
+            EXIT WHEN remaining = 0;
+        END LOOP;
+
+        -- Sanity check: all patients should be moved
+        IF remaining > 0 THEN
+            RAISE EXCEPTION 
+                'Distribution error: % patients could not be placed. Deletion cancelled.', 
+                remaining;
+        END IF;
+
+        RETURN OLD;
+    END;
+    $$;
+    """)
+
+    # Attach trigger to wards table
+    op.execute("""
+    DROP TRIGGER IF EXISTS tr_wards_before_delete ON wards;
+    CREATE TRIGGER tr_wards_before_delete
+        BEFORE DELETE ON wards
+        FOR EACH ROW
+        EXECUTE FUNCTION fn_wards_before_delete_move_patients();
+    """)
+
     # Attach triggers to patients table
     op.execute("""
     DROP TRIGGER IF EXISTS tr_patients_before_diagnosis ON patients;
@@ -193,6 +317,7 @@ def downgrade():
     DROP TRIGGER IF EXISTS tr_patients_before_diagnosis_consistency ON patients;
     DROP TRIGGER IF EXISTS tr_patients_before_capacity ON patients;
     DROP TRIGGER IF EXISTS tr_patients_before_diagnosis ON patients;
+    DROP TRIGGER IF EXISTS tr_wards_before_delete ON wards;
     """)
 
     op.execute("""
@@ -200,6 +325,7 @@ def downgrade():
     DROP FUNCTION IF EXISTS fn_patients_before_check_ward_diagnosis();
     DROP FUNCTION IF EXISTS fn_patients_before_capacity_check();
     DROP FUNCTION IF EXISTS fn_patients_before_update_handle_diagnosis();
+    DROP FUNCTION IF EXISTS fn_wards_before_delete_move_patients();
     """)
 
     op.execute("""
