@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { CustomDataGrid } from '../../components/ui/CustomDataGrid';
 import { getApi } from '../../services/api/client';
+import { extractErrorMessage } from '../../utils/errorHandling';
 import { distributionService } from '../../services/distributionService';
 import type { PatientResponse, WardResponse } from '../../api/generated';
 import type { Column } from '../../components/ui/CustomDataGrid';
@@ -83,37 +84,20 @@ const DistributionPage: React.FC = () => {
 
   const handleAutoDistribute = async () => {
     if (!window.confirm('Auto-assign all unassigned patients?')) return;
-
+    
     setDistributing(true);
+    setError('');
+    
     try {
-      // Iterate over a shallow copy because we'll be modifying state inside the loop
-      const patientsToAssign = [...unassignedPatients];
-      for (const patient of patientsToAssign) {
-        const suggestedWard = distributionService.suggestWard(wards);
-        if (suggestedWard) {
-          try {
-            await getApi().updatePatientApiV1PatientsPatientIdPut(patient.id, {
-              ward_id: suggestedWard.id,
-            });
+      // Call backend endpoint
+      await getApi().autoDistributePatientsApiV1PatientsAutoDistributePost();
 
-            // Update UI immediately for responsiveness
-            setUnassignedPatients((prev) => prev.filter((p) => p.id !== patient.id));
-            setWards((prev) =>
-              prev.map((w) =>
-                w.id === suggestedWard.id ? { ...w, current_occupancy: (w.current_occupancy || 0) + 1 } : w
-              )
-            );
-          } catch (err) {
-            // Continue assigning others even if one fails
-            console.error('Failed to assign patient', patient.id, err);
-          }
-        }
-      }
-
-      // Final sync
+      // Refresh data
       fetchData();
+      
     } catch (err: any) {
-      setError('Auto-distribution encountered an error');
+      setError(extractErrorMessage(err) || 'Failed to auto-distribute patients');
+      console.error('Auto-distribute error:', err);
     } finally {
       setDistributing(false);
     }

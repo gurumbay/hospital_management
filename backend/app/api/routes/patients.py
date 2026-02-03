@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_active_user, require_doctor
 from app.schemas.patient import PatientResponse, PatientCreate, PatientUpdate
@@ -105,3 +105,18 @@ def delete_patient(
     """Delete patient (doctor only)."""
     patient_service = PatientService(db)
     patient_service.delete_patient(patient_id)
+
+@router.post("/auto-distribute", response_model=List[PatientResponse])
+def auto_distribute_patients(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_doctor)
+):
+    """Auto-distribute all unassigned patients to wards."""
+    patient_service = PatientService(db)
+    try:
+        return patient_service.auto_distribute_patients()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to auto-distribute patients: {str(e)}"
+        )

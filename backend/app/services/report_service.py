@@ -133,7 +133,11 @@ class ReportService:
             rows = [_to_str_row(r) for r in table_rows]
             # simple column width heuristic
             col_count = max((len(r) for r in rows), default=1)
-            col_widths = [doc.width / col_count] * col_count
+            # col_widths = [doc.width / col_count] * col_count
+            if heading == "Ward Details" and col_count == 5:
+                col_widths = [2.5 * inch, 0.8 * inch, 0.8 * inch, 0.8 * inch, 0.8 * inch]
+            else:
+                col_widths = [doc.width / col_count] * col_count
             tbl = Table(rows, colWidths=col_widths)
             tbl.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1976d2")),

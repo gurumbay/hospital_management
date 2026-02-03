@@ -252,8 +252,6 @@ export interface ValidationError {
   type: string;
 }
 
-export type WardCreateDiagnosisId = number | null;
-
 /**
  * Schema for creating a ward.
  */
@@ -267,10 +265,7 @@ export interface WardCreate {
    * @maximum 100
    */
   max_capacity: number;
-  diagnosis_id?: WardCreateDiagnosisId;
 }
-
-export type WardResponseDiagnosisId = number | null;
 
 /**
  * Schema for ward responses.
@@ -285,7 +280,6 @@ export interface WardResponse {
    * @maximum 100
    */
   max_capacity: number;
-  diagnosis_id?: WardResponseDiagnosisId;
   id: number;
   current_occupancy?: number;
 }
@@ -294,15 +288,12 @@ export type WardUpdateName = string | null;
 
 export type WardUpdateMaxCapacity = number | null;
 
-export type WardUpdateDiagnosisId = number | null;
-
 /**
  * Schema for updating a ward.
  */
 export interface WardUpdate {
   name?: WardUpdateName;
   max_capacity?: WardUpdateMaxCapacity;
-  diagnosis_id?: WardUpdateDiagnosisId;
 }
 
 export type GetUsersApiV1UsersGetParams = {
@@ -340,7 +331,6 @@ export type GetWardsApiV1WardsGetParams = {
    * @maximum 100
    */
   limit?: number;
-  diagnosis_id?: number;
 };
 
 export type GetPatientsApiV1PatientsGetParams = {
@@ -743,6 +733,22 @@ export const getHospitalManagementSystem = () => {
   };
 
   /**
+   * Auto-distribute all unassigned patients to wards.
+   * @summary Auto Distribute Patients
+   */
+  const autoDistributePatientsApiV1PatientsAutoDistributePost = <
+    TData = AxiosResponse<PatientResponse[]>,
+  >(
+    options?: AxiosRequestConfig,
+  ): Promise<TData> => {
+    return axios.default.post(
+      `/api/v1/patients/auto-distribute`,
+      undefined,
+      options,
+    );
+  };
+
+  /**
  * Export ward occupancy report as PDF.
 
 Returns:
@@ -802,6 +808,7 @@ Returns:
     getPatientApiV1PatientsPatientIdGet,
     updatePatientApiV1PatientsPatientIdPut,
     deletePatientApiV1PatientsPatientIdDelete,
+    autoDistributePatientsApiV1PatientsAutoDistributePost,
     exportOccupancyReportPdfApiV1ReportsOccupancyPdfGet,
     exportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGet,
   };
@@ -854,6 +861,8 @@ export type UpdatePatientApiV1PatientsPatientIdPutResult =
   AxiosResponse<PatientResponse>;
 export type DeletePatientApiV1PatientsPatientIdDeleteResult =
   AxiosResponse<void>;
+export type AutoDistributePatientsApiV1PatientsAutoDistributePostResult =
+  AxiosResponse<PatientResponse[]>;
 export type ExportOccupancyReportPdfApiV1ReportsOccupancyPdfGetResult =
   AxiosResponse<unknown>;
 export type ExportDiagnosisStatsReportPdfApiV1ReportsDiagnosisStatsPdfGetResult =

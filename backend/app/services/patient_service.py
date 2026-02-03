@@ -163,3 +163,95 @@ class PatientService:
         
         # No available ward for this diagnosis
         return None
+
+    def auto_distribute_patients(self) -> List[PatientResponse]:
+        """Auto-distribute all unassigned patients to appropriate wards.
+        
+        Algorithm:
+        1. Group unassigned patients by diagnosis
+        2. For each diagnosis, try to fill existing wards with same diagnosis
+        3. If patients remain, assign to empty wards
+        4. If still patients remain, they stay unassigned (not enough capacity)
+        """
+        # Get all unassigned patients
+        unassigned_patients = self.patient_repo.get_multi(ward_id=None)
+        if not unassigned_patients:
+            return []
+        
+        # Get all wards with current occupancy
+        wards = self.ward_repo.get_multi()
+        
+        # Group patients by diagnosis
+        patients_by_diagnosis = {}
+        for patient in unassigned_patients:
+            patients_by_diagnosis.setdefault(patient.diagnosis_id, []).append(patient)
+        
+        distributed_patients = []
+        
+        try:
+            # Process each diagnosis group
+            for diagnosis_id, patients in patients_by_diagnosis.items():
+                # List to track which patients were assigned
+                assigned_patients = []
+                
+                # Strategy 1: Fill existing wards with same diagnosis
+                for patient in patients:
+                    # Find suitable ward for this patient
+                    suitable_ward = None
+                    
+                    # Look for wards with same diagnosis and capacity
+                    for ward in wards:
+                        # Skip if ward is full
+                        if ward.current_occupancy >= ward.max_capacity:
+                            continue
+                        
+                        # Check if ward has patients
+                        ward_patients = self.patient_repo.get_by_ward(ward.id)
+                        
+                        if ward_patients:
+                            # Check if all patients in ward have same diagnosis
+                            ward_diagnoses = {p.diagnosis_id for p in ward_patients}
+                            if diagnosis_id not in ward_diagnoses:
+                                # Ward has different diagnosis
+                                continue
+                        
+                        # Found suitable ward
+                        suitable_ward = ward
+                        break
+                    
+                    if suitable_ward:
+                        # Assign patient to ward
+                        update_data = {"ward_id": suitable_ward.id}
+                        updated_patient = self.patient_repo.update(patient, update_data)
+                        distributed_patients.append(updated_patient)
+                        assigned_patients.append(patient)
+                        
+                        # Update ward occupancy in memory for subsequent checks
+                        suitable_ward.current_occupancy += 1
+                
+                # Remove assigned patients from the list
+                patients = [p for p in patients if p not in assigned_patients]
+                
+                # Strategy 2: Assign remaining patients to empty wards
+                if patients:
+                    for patient in patients:
+                        # Find empty ward
+                        empty_ward = None
+                        for ward in wards:
+                            if ward.current_occupancy == 0:
+                                empty_ward = ward
+                                break
+                        
+                        if empty_ward:
+                            # Assign patient to empty ward
+                            update_data = {"ward_id": empty_ward.id}
+                            updated_patient = self.patient_repo.update(patient, update_data)
+                            distributed_patients.append(updated_patient)
+                            
+                            # Update ward occupancy
+                            empty_ward.current_occupancy = 1
+            
+            return [PatientResponse.model_validate(p) for p in distributed_patients]
+            
+        except Exception as e:
+            raise
